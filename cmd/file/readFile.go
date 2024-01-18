@@ -34,6 +34,9 @@ func readLines(filePath string, lines chan<- string) {
 	scanner := bufio.NewScanner(file)
 	lineCount := 0
 	for scanner.Scan() {
+		if lineCount >= 1000000 {
+			break
+		}
 		line := scanner.Text()
 		lines <- line
 		lineCount++
