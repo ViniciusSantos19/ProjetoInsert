@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	"inserto-paralelo/internal/db"
+	//"inserto-paralelo/internal/db"
 	"inserto-paralelo/internal/model"
 	"log"
 	"os"
@@ -87,7 +87,10 @@ func ReadFromFileConcurrently(filePath string, dataBase *sql.DB) {
 	fmt.Println("Inicio da rotina de insertir ao banco de dados")
 	go func() {
 		defer wg.Done()
-		db.InsertCheckinsInBatches(dataBase, results)
+		// db.InsertCheckinsInBatches(dataBase, results)
+		for checkin := range results {
+			fmt.Println(checkin)
+		}
 	}()
 
 	wg.Wait() // Ensure both goroutines finish
