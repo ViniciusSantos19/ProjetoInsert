@@ -1,0 +1,25 @@
+package main
+
+import (
+	"fmt"
+	"inserto-paralelo/cmd/file"
+	"inserto-paralelo/internal/db"
+	"log"
+)
+
+func main() {
+	nomeBanco := "../../mydatabase.db"
+	dataBase, err := db.ConctarAoBancoDeDados(nomeBanco)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	caminhoArquivo := "../../checkin_data_foursquare.txt"
+
+	defer dataBase.Close()
+
+	db.CreateBook(dataBase)
+	fmt.Println("Entrando na funcao pricipal de ler e inserir de forma concorrente")
+	file.ReadFromFileConcurrently(caminhoArquivo, dataBase)
+
+}

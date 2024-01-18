@@ -1,0 +1,4 @@
+# Ignorar o banco de dados sqlite
+mydatabase.db
+# Ignorar o arquivo de texto
+checkin_data_foursquare.txt
