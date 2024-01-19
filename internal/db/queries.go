@@ -70,50 +70,15 @@ func replaceSQL(old, searchPattern string) string {
 	})
 }
 
-func executeBatchInsert(db *sql.DB, sqlString string, args []interface{}) error {
-	sqlString = strings.TrimSuffix(sqlString, ",")
-	sqlString = replaceSQL(sqlString, "?")
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(sqlString)
-	if err != nil {
-		return err
-	}
-
-	_, err = stmt.Exec(args...)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func InsertCheckinsInBatches(db *sql.DB, checkins <-chan model.Checkin) error {
-	fmt.Println("Dentro da função de insert")
-
+func buildInsertSQLBatch(checkins []model.Checkin) (string, []interface{}) {
+	var sqlString strings.Builder
 	var args []interface{}
-	sqlString := "INSERT INTO checkins (UserID, TweetID, Lat, Long, Time, VenueID, Text) VALUES"
-	batchSize := 2000
-	batchCount := 0
 
-	// Use a loop to read from the channel until it's closed
-	for {
-		checkin, ok := <-checkins
-		if !ok {
-			break // Channel closed, exit the loop
-		}
+	sqlString.WriteString("INSERT INTO checkins (UserID, TweetID, Lat, Long, Time, VenueID, Text) VALUES ")
 
-		sqlString += "(?,?,?,?,?,?,?),"
+	for i, checkin := range checkins {
+		sqlString.WriteString("(?, ?, ?, ?, ?, ?, ?)")
+
 		args = append(args,
 			checkin.UserID,
 			checkin.TweetID,
@@ -123,26 +88,70 @@ func InsertCheckinsInBatches(db *sql.DB, checkins <-chan model.Checkin) error {
 			checkin.VenueID,
 			checkin.Text)
 
-		// Check if the batch size is reached
-		if len(args)/7 == batchSize {
-			err := executeBatchInsert(db, sqlString, args)
+		if i < len(checkins)-1 {
+			sqlString.WriteString(", ")
+		}
+	}
+
+	return sqlString.String(), args
+}
+
+func InsertCheckinsInBatches(db *sql.DB, checkins <-chan model.Checkin) error {
+	fmt.Println("Dentro da função de insert")
+
+	batchSize := 3000
+	batchCount := 0
+
+	// Iniciar uma única transação
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			// Recuperar de pânico
+			tx.Rollback()
+			fmt.Println("Pânico recuperado:", p)
+		}
+
+		// Commit no final do processamento
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		err = tx.Commit()
+		if err != nil {
+			fmt.Println("Erro ao fazer commit:", err)
+		}
+	}()
+
+	// Use um loop para ler do canal até que seja fechado
+	var checkinBatch []model.Checkin
+	for checkin := range checkins {
+		checkinBatch = append(checkinBatch, checkin)
+
+		// Verificar se o tamanho do lote foi atingido
+		if len(checkinBatch) == batchSize {
+			sqlString, args := buildInsertSQLBatch(checkinBatch)
+			_, err := tx.Exec(sqlString, args...)
 			if err != nil {
 				return err
 			}
 
-			// Reset variables for the next batch
-			sqlString = "INSERT INTO checkins (UserID, TweetID, Lat, Long, Time, VenueID, Text) VALUES"
-			args = []interface{}{}
+			// Resetar slice para o próximo lote
+			checkinBatch = nil
 			batchCount++
 		}
 	}
 
-	// Insert the remaining data
-	if len(args) > 0 {
-		err := executeBatchInsert(db, sqlString, args)
+	// Inserir os dados restantes
+	if len(checkinBatch) > 0 {
+		sqlString, args := buildInsertSQLBatch(checkinBatch)
+		_, err := tx.Exec(sqlString, args...)
 		if err != nil {
 			return err
 		}
+		batchCount++
 	}
 
 	fmt.Printf("%d batches inserted\n", batchCount)
