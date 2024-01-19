@@ -22,8 +22,8 @@ func convertToFloat64(s string) float64 {
 	return result
 }
 
-func readLines(filePath string, lines chan<- string) {
-	defer close(lines)
+func readLines(filePath string, results chan<- model.Checkin) {
+	defer close(results)
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Println("Error opening file:", err)
@@ -34,21 +34,10 @@ func readLines(filePath string, lines chan<- string) {
 	scanner := bufio.NewScanner(file)
 	lineCount := 0
 	for scanner.Scan() {
+		if lineCount >= 1000000 {
+			break
+		}
 		line := scanner.Text()
-		lines <- line
-		lineCount++
-		fmt.Println(lineCount)
-	}
-	fmt.Println(lineCount)
-	fmt.Println("Travou aqui")
-	defer fmt.Println("Fecou o canal de lines")
-}
-
-func processLines(lines <-chan string, results chan<- model.Checkin) {
-	defer close(results)
-	for line := range lines {
-		fmt.Println("Entrando no loop novamente")
-
 		values := strings.Split(line, "\t")
 
 		checkin := model.Checkin{
@@ -60,40 +49,37 @@ func processLines(lines <-chan string, results chan<- model.Checkin) {
 			VenueID: values[5],
 			Text:    values[6],
 		}
-		fmt.Println("Travou aqui")
-		fmt.Printf("O tamanho do buffer é %d\n", len(results))
+		lineCount++
 		results <- checkin
+		fmt.Println(lineCount)
 	}
+	fmt.Println(lineCount)
+	fmt.Println("Travou aqui")
+	defer fmt.Println("Fecou o canal de lines")
 }
 
 func ReadFromFileConcurrently(filePath string, dataBase *sql.DB) {
 	var wg sync.WaitGroup
 	results := make(chan model.Checkin, 1000)
-	line := make(chan string, 100)
 
-	wg.Add(3) // Account for both goroutines
+	wg.Add(2) // Account for both goroutines
 
-	fmt.Println("Inicio da rotina de ler linhas")
 	go func() {
 		defer wg.Done()
-		readLines(filePath, line)
-	}()
-	fmt.Println("Inicio da rotina de processar linhas")
-	go func() {
-		defer wg.Done()
-		processLines(line, results)
+		readLines(filePath, results)
 	}()
 
-	fmt.Println("Inicio da rotina de insertir ao banco de dados")
 	go func() {
 		defer wg.Done()
 		// db.InsertCheckinsInBatches(dataBase, results)
 		for checkin := range results {
+			fmt.Println("Processou linha")
 			fmt.Println(checkin)
 		}
 	}()
-
 	wg.Wait() // Ensure both goroutines finish
+	fmt.Println("Terminou de processar as rotinas")
+	fmt.Println(len(results))
 
 }
 
