@@ -34,9 +34,6 @@ func readLines(filePath string, results chan<- model.Checkin) {
 	scanner := bufio.NewScanner(file)
 	lineCount := 0
 	for scanner.Scan() {
-		if lineCount >= 1000000 {
-			break
-		}
 		line := scanner.Text()
 		values := strings.Split(line, "\t")
 		if len(values) == 7 {
@@ -61,7 +58,7 @@ func readLines(filePath string, results chan<- model.Checkin) {
 
 func ReadFromFileConcurrently(filePath string, dataBase *sql.DB) {
 	var wg sync.WaitGroup
-	results := make(chan model.Checkin, 10000)
+	results := make(chan model.Checkin)
 
 	wg.Add(2) // Account for both goroutines
 
