@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"inserto-paralelo/internal/model"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -59,11 +60,14 @@ CREATE TABLE checkins (
 }
 
 func replaceSQL(old, searchPattern string) string {
-	tmpCount := strings.Count(old, searchPattern)
-	for m := 1; m <= tmpCount; m++ {
-		old = strings.Replace(old, searchPattern, "$"+strconv.Itoa(m), 1)
-	}
-	return old
+	re := regexp.MustCompile(regexp.QuoteMeta(searchPattern))
+	m := 1
+
+	return re.ReplaceAllStringFunc(old, func(match string) string {
+		result := "$" + strconv.Itoa(m)
+		m++
+		return result
+	})
 }
 
 func executeBatchInsert(db *sql.DB, sqlString string, args []interface{}) error {
@@ -99,7 +103,7 @@ func InsertCheckinsInBatches(db *sql.DB, checkins <-chan model.Checkin) error {
 
 	var args []interface{}
 	sqlString := "INSERT INTO checkins (UserID, TweetID, Lat, Long, Time, VenueID, Text) VALUES"
-	batchSize := 1500
+	batchSize := 2000
 	batchCount := 0
 
 	// Use a loop to read from the channel until it's closed
