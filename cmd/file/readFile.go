@@ -39,19 +39,20 @@ func readLines(filePath string, results chan<- model.Checkin) {
 		}
 		line := scanner.Text()
 		values := strings.Split(line, "\t")
-
-		checkin := model.Checkin{
-			UserID:  values[0],
-			TweetID: values[1],
-			Lat:     convertToFloat64(values[2]),
-			Long:    convertToFloat64(values[3]),
-			Time:    parseTime(values[4]),
-			VenueID: values[5],
-			Text:    values[6],
+		if len(values) == 7 {
+			checkin := model.Checkin{
+				UserID:  values[0],
+				TweetID: values[1],
+				Lat:     convertToFloat64(values[2]),
+				Long:    convertToFloat64(values[3]),
+				Time:    parseTime(values[4]),
+				VenueID: values[5],
+				Text:    values[6],
+			}
+			lineCount++
+			results <- checkin
+			fmt.Println(lineCount)
 		}
-		lineCount++
-		results <- checkin
-		fmt.Println(lineCount)
 	}
 	fmt.Println(lineCount)
 	fmt.Println("Travou aqui")
