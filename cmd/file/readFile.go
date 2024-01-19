@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	//"inserto-paralelo/internal/db"
+	"inserto-paralelo/internal/db"
 	"inserto-paralelo/internal/model"
 	"log"
 	"os"
@@ -61,7 +61,7 @@ func readLines(filePath string, results chan<- model.Checkin) {
 
 func ReadFromFileConcurrently(filePath string, dataBase *sql.DB) {
 	var wg sync.WaitGroup
-	results := make(chan model.Checkin, 1000)
+	results := make(chan model.Checkin, 10000)
 
 	wg.Add(2) // Account for both goroutines
 
@@ -72,11 +72,11 @@ func ReadFromFileConcurrently(filePath string, dataBase *sql.DB) {
 
 	go func() {
 		defer wg.Done()
-		// db.InsertCheckinsInBatches(dataBase, results)
-		for checkin := range results {
-			fmt.Println("Processou linha")
-			fmt.Println(checkin)
-		}
+		db.InsertCheckinsInBatches(dataBase, results)
+		//for checkin := range results {
+		//fmt.Println("Processou linha")
+		//fmt.Println(checkin)
+		//}
 	}()
 	wg.Wait() // Ensure both goroutines finish
 	fmt.Println("Terminou de processar as rotinas")
