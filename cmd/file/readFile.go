@@ -51,14 +51,11 @@ func readLines(filePath string, results chan<- model.Checkin) {
 			fmt.Println(lineCount)
 		}
 	}
-	fmt.Println(lineCount)
-	fmt.Println("Travou aqui")
-	defer fmt.Println("Fecou o canal de lines")
 }
 
 func ReadFromFileConcurrently(filePath string, dataBase *sql.DB) {
 	var wg sync.WaitGroup
-	results := make(chan model.Checkin)
+	results := make(chan model.Checkin, 2000)
 
 	wg.Add(2) // Account for both goroutines
 
@@ -70,10 +67,6 @@ func ReadFromFileConcurrently(filePath string, dataBase *sql.DB) {
 	go func() {
 		defer wg.Done()
 		db.InsertCheckinsInBatches(dataBase, results)
-		//for checkin := range results {
-		//fmt.Println("Processou linha")
-		//fmt.Println(checkin)
-		//}
 	}()
 	wg.Wait() // Ensure both goroutines finish
 	fmt.Println("Terminou de processar as rotinas")

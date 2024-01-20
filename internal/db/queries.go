@@ -99,7 +99,7 @@ func buildInsertSQLBatch(checkins []model.Checkin) (string, []interface{}) {
 func InsertCheckinsInBatches(db *sql.DB, checkins <-chan model.Checkin) error {
 	fmt.Println("Dentro da função de insert")
 
-	batchSize := 3000
+	batchSize := 4000
 	batchCount := 0
 
 	// Iniciar uma única transação
