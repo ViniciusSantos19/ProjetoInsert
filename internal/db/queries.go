@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"inserto-paralelo/internal/model"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -57,17 +55,6 @@ CREATE TABLE checkins (
 	fmt.Printf("A tabela %s foi criada com sucesso\n", tableName)
 	return nil
 
-}
-
-func replaceSQL(old, searchPattern string) string {
-	re := regexp.MustCompile(regexp.QuoteMeta(searchPattern))
-	m := 1
-
-	return re.ReplaceAllStringFunc(old, func(match string) string {
-		result := "$" + strconv.Itoa(m)
-		m++
-		return result
-	})
 }
 
 func buildInsertSQLBatch(checkins []model.Checkin) (string, []interface{}) {
