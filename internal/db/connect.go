@@ -1,13 +1,13 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func ConctarAoBancoDeDados(nomeBancodeDados string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "../../mydatabase.db")
+func ConctarAoBancoDeDados(nomeBancodeDados string) (*sqlx.DB, error) {
+	db, err := sqlx.Open("sqlite3", nomeBancodeDados)
 
 	if err != nil {
 		return nil, fmt.Errorf("Erro ao abrir o banco de dados: %v", err)
