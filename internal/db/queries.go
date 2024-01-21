@@ -2,12 +2,8 @@ package db
 
 import (
 	"fmt"
-	"inserto-paralelo/internal/model"
-	"regexp"
-	"strconv"
-	"strings"
-
 	"github.com/jmoiron/sqlx"
+	"inserto-paralelo/internal/model"
 )
 
 func tableExists(db *sqlx.DB, tableName string) (bool, error) {
@@ -68,45 +64,6 @@ CREATE TABLE checkins (
 	return nil
 }
 
-func replaceSQL(old, searchPattern string) string {
-	re := regexp.MustCompile(regexp.QuoteMeta(searchPattern))
-	m := 1
-
-	return re.ReplaceAllStringFunc(old, func(match string) string {
-		result := "$" + strconv.Itoa(m)
-		m++
-		return result
-	})
-}
-
-func executeBatchInsert(db *sql.DB, sqlString string, args []interface{}) error {
-	sqlString = strings.TrimSuffix(sqlString, ",")
-	sqlString = replaceSQL(sqlString, "?")
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(sqlString)
-	if err != nil {
-		return err
-	}
-
-	_, err = stmt.Exec(args...)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func insertBatch(db *sqlx.DB, batch []model.Checkin) error {
 	// Build the insert statement
 	query := `
@@ -159,54 +116,33 @@ func insertBatch(db *sqlx.DB, batch []model.Checkin) error {
 	return nil
 }
 
-func InsertCheckinsInBatches(db *sql.DB, checkins <-chan model.Checkin) error {
-	fmt.Println("Dentro da função de insert")
+func InsertCheckinsInBatches(db *sqlx.DB, checkins <-chan model.Checkin) error {
+	// Create a slice to hold the checkins
+	batch := make([]model.Checkin, 0, 4000)
 
-	var args []interface{}
-	sqlString := "INSERT INTO checkins (UserID, TweetID, Lat, Long, Time, VenueID, Text) VALUES"
-	batchSize := 2000
-	batchCount := 0
+	for checkin := range checkins {
+		// Add the checkin to the slice
+		batch = append(batch, checkin)
 
-	// Use a loop to read from the channel until it's closed
-	for {
-		checkin, ok := <-checkins
-		if !ok {
-			break // Channel closed, exit the loop
-		}
-
-		sqlString += "(?,?,?,?,?,?,?),"
-		args = append(args,
-			checkin.UserID,
-			checkin.TweetID,
-			checkin.Lat,
-			checkin.Long,
-			checkin.Time,
-			checkin.VenueID,
-			checkin.Text)
-
-		// Check if the batch size is reached
-		if len(args)/7 == batchSize {
-			err := executeBatchInsert(db, sqlString, args)
+		// If the slice is full, insert the batch
+		if len(batch) >= 4000 {
+			err := insertBatch(db, batch)
 			if err != nil {
 				return err
 			}
 
-			// Reset variables for the next batch
-			sqlString = "INSERT INTO checkins (UserID, TweetID, Lat, Long, Time, VenueID, Text) VALUES"
-			args = []interface{}{}
-			batchCount++
+			// Clear the slice
+			batch = make([]model.Checkin, 0, 4000)
 		}
 	}
 
-	// Insert the remaining data
-	if len(args) > 0 {
-		err := executeBatchInsert(db, sqlString, args)
+	// If there are any remaining checkins, insert them
+	if len(batch) > 0 {
+		err := insertBatch(db, batch)
 		if err != nil {
 			return err
 		}
 	}
-
-	fmt.Printf("%d batches inserted\n", batchCount)
 
 	return nil
 }
