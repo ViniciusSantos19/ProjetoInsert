@@ -2,7 +2,6 @@ package file
 
 import (
 	"bufio"
-	"database/sql"
 	"fmt"
 	"inserto-paralelo/internal/db"
 	"inserto-paralelo/internal/model"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func convertToFloat64(s string) float64 {
@@ -55,11 +56,9 @@ func readLines(filePath string, results chan<- model.Checkin) {
 		}
 	}
 	fmt.Println(lineCount)
-	fmt.Println("Travou aqui")
-	defer fmt.Println("Fecou o canal de lines")
 }
 
-func ReadFromFileConcurrently(filePath string, dataBase *sql.DB) {
+func ReadFromFileConcurrently(filePath string, dataBase *sqlx.DB) {
 	var wg sync.WaitGroup
 	results := make(chan model.Checkin, 10000)
 
@@ -73,14 +72,8 @@ func ReadFromFileConcurrently(filePath string, dataBase *sql.DB) {
 	go func() {
 		defer wg.Done()
 		db.InsertCheckinsInBatches(dataBase, results)
-		//for checkin := range results {
-		//fmt.Println("Processou linha")
-		//fmt.Println(checkin)
-		//}
 	}()
 	wg.Wait() // Ensure both goroutines finish
-	fmt.Println("Terminou de processar as rotinas")
-	fmt.Println(len(results))
 
 }
 
