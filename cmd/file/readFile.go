@@ -60,7 +60,7 @@ func readLines(filePath string, results chan<- model.Checkin) {
 
 func ReadFromFileConcurrently(filePath string, dataBase *sqlx.DB) {
 	var wg sync.WaitGroup
-	results := make(chan model.Checkin, 10000)
+	results := make(chan model.Checkin)
 
 	wg.Add(2) // Account for both goroutines
 

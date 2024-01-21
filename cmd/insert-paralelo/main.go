@@ -20,7 +20,7 @@ func main() {
 
 	defer dataBase.Close()
 
-	db.CreateBook(dataBase)
+	db.CreateCheckins(dataBase)
 	fmt.Println("Entrando na funcao pricipal de ler e inserir de forma concorrente")
 	file.ReadFromFileConcurrently(caminhoArquivo, dataBase)
 	took := time.Since(startedAt)
