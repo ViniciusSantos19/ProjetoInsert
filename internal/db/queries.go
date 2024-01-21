@@ -25,6 +25,15 @@ func tableExists(db *sqlx.DB, tableName string) (bool, error) {
 	return exists, nil
 }
 
+func dropTable(db *sqlx.DB) error {
+	_, err := db.Exec("drop table checkins")
+	if err != nil {
+		return fmt.Errorf("Error dropping table 'checkins': %v", err)
+	}
+
+	return nil
+}
+
 func CreateBook(db *sqlx.DB) error {
 	sqlStmt := `
 CREATE TABLE checkins (
@@ -45,6 +54,7 @@ CREATE TABLE checkins (
 
 	if exists {
 		fmt.Printf("Table %s already exists\n", tableName)
+
 		return nil
 	}
 
@@ -93,6 +103,58 @@ func executeBatchInsert(db *sql.DB, sqlString string, args []interface{}) error 
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func insertBatch(db *sqlx.DB, batch []model.Checkin) error {
+	// Build the insert statement
+	query := `
+        INSERT INTO checkins (
+            user_id,
+            tweet_id,
+            lat,
+            long,
+            time,
+            venue_id,
+            text
+        )
+        VALUES
+        (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6,
+            $7
+        )
+    `
+
+	// Prepare the statement
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	// Bind the values
+	for _, checkin := range batch {
+		_, err = stmt.Exec(
+			checkin.UserID,
+			checkin.TweetID,
+			checkin.Lat,
+			checkin.Long,
+			checkin.Time,
+			checkin.VenueID,
+			checkin.Text,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Close the statement
+	stmt.Close()
 
 	return nil
 }
