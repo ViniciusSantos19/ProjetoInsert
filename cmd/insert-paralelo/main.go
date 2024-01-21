@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"inserto-paralelo/cmd/file"
 	"inserto-paralelo/internal/db"
 	"log"
