@@ -117,22 +117,22 @@ func insertBatch(db *sqlx.DB, batch []model.Checkin) error {
 }
 
 func InsertCheckinsInBatches(db *sqlx.DB, checkins <-chan model.Checkin) error {
-	// Create a slice to hold the checkins
-	batch := make([]model.Checkin, 0, 4000)
+	batchSize := 4000
+	batch := make([]model.Checkin, 0, batchSize)
 
 	for checkin := range checkins {
 		// Add the checkin to the slice
 		batch = append(batch, checkin)
 
 		// If the slice is full, insert the batch
-		if len(batch) >= 4000 {
+		if len(batch) >= batchSize {
 			err := insertBatch(db, batch)
 			if err != nil {
 				return err
 			}
 
 			// Clear the slice
-			batch = make([]model.Checkin, 0, 4000)
+			batch = make([]model.Checkin, 0, batchSize)
 		}
 	}
 
