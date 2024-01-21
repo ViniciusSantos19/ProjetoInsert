@@ -1,28 +1,28 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	"inserto-paralelo/internal/model"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
-func tableExists(db *sql.DB, tableName string) (bool, error) {
-	query := fmt.Sprintf("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';", tableName)
+func tableExists(db *sqlx.DB, tableName string) (bool, error) {
+	query := `SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = $1
+    )`
 
-	rows, err := db.Query(query)
+	var exists bool
+	err := db.QueryRow(query, tableName).Scan(&exists)
 	if err != nil {
-		return false, fmt.Errorf("Erro ao verificar a existência da tabela: %v", err)
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		return true, nil // A tabela existe
+		return false, fmt.Errorf("Error checking table existence: %v", err)
 	}
 
-	return false, nil // A tabela não existe
+	return exists, nil
 }
 
 func CreateBook(db *sql.DB) error {
