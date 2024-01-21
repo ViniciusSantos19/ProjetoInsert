@@ -138,6 +138,6 @@ func InsertCheckinsInBatches(db *sql.DB, checkins <-chan model.Checkin) error {
 	}
 
 	fmt.Printf("%d batches inserted\n", batchCount)
-
+	fmt.Println("apenas um teste para a chave shh")
 	return nil
 }
