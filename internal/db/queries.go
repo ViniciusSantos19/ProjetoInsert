@@ -101,7 +101,6 @@ func InsertCheckinsInBatches(db *sql.DB, checkins <-chan model.Checkin) error {
 			fmt.Println("Pânico recuperado:", p)
 		}
 
-		// Commit no final do processamento
 		if err != nil {
 			tx.Rollback()
 			return
@@ -112,12 +111,11 @@ func InsertCheckinsInBatches(db *sql.DB, checkins <-chan model.Checkin) error {
 		}
 	}()
 
-	// Use um loop para ler do canal até que seja fechado
 	var checkinBatch []model.Checkin
+
 	for checkin := range checkins {
 		checkinBatch = append(checkinBatch, checkin)
 
-		// Verificar se o tamanho do lote foi atingido
 		if len(checkinBatch) == batchSize {
 			sqlString, args := buildInsertSQLBatch(checkinBatch)
 			_, err := tx.Exec(sqlString, args...)
@@ -125,13 +123,11 @@ func InsertCheckinsInBatches(db *sql.DB, checkins <-chan model.Checkin) error {
 				return err
 			}
 
-			// Resetar slice para o próximo lote
 			checkinBatch = nil
 			batchCount++
 		}
 	}
 
-	// Inserir os dados restantes
 	if len(checkinBatch) > 0 {
 		sqlString, args := buildInsertSQLBatch(checkinBatch)
 		_, err := tx.Exec(sqlString, args...)
