@@ -5,11 +5,11 @@ import (
 )
 
 type Checkin struct {
-	UserID  string    `json:"userID"`
-	TweetID string    `json:"tweetID"`
-	Lat     float64   `json:"lat"`
-	Long    float64   `json:"long"`
-	Time    time.Time `json:"time"`
-	VenueID string    `json:"venueID"`
-	Text    string    `json:"text"`
+	UserID  string    `db:"userID"`
+	TweetID string    `db:"tweetID"`
+	Lat     float64   `db:"lat"`
+	Long    float64   `db:"long"`
+	Time    time.Time `db:"time"`
+	VenueID string    `db:"venueID"`
+	Text    string    `db:"text"`
 }
