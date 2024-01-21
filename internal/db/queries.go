@@ -25,7 +25,7 @@ func tableExists(db *sqlx.DB, tableName string) (bool, error) {
 	return exists, nil
 }
 
-func CreateBook(db *sql.DB) error {
+func CreateBook(db *sqlx.DB) error {
 	sqlStmt := `
 CREATE TABLE checkins (
     UserID TEXT,
@@ -35,28 +35,27 @@ CREATE TABLE checkins (
     Time DATETIME,
     VenueID TEXT,
     Text TEXT
-);`
+)`
 
 	tableName := "checkins"
 	exists, err := tableExists(db, tableName)
-
 	if err != nil {
-		return fmt.Errorf("erro inesperado: %v", err)
+		return fmt.Errorf("unexpected error: %v", err)
 	}
 
 	if exists {
-		fmt.Printf("A tabela %s já existe\n", tableName)
+		fmt.Printf("Table %s already exists\n", tableName)
 		return nil
 	}
 
+	// Use sqlx.Exec for prepared statements
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
-		return fmt.Errorf("Erro ao criar a tabela '%s': %v", tableName, err)
+		return fmt.Errorf("Error creating table '%s': %v", tableName, err)
 	}
 
-	fmt.Printf("A tabela %s foi criada com sucesso\n", tableName)
+	fmt.Printf("Table %s created successfully\n", tableName)
 	return nil
-
 }
 
 func replaceSQL(old, searchPattern string) string {
