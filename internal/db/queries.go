@@ -7,24 +7,9 @@ import (
 	"strings"
 )
 
-func tableExists(db *sql.DB, tableName string) (bool, error) {
-	query := fmt.Sprintf("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';", tableName)
-
-	rows, err := db.Query(query)
-	if err != nil {
-		return false, fmt.Errorf("Erro ao verificar a existência da tabela: %v", err)
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		return true, nil // A tabela existe
-	}
-
-	return false, nil // A tabela não existe
-}
-
-func CreateBook(db *sql.DB) error {
+func CreateCheckin(db *sql.DB) error {
 	sqlStmt := `
+DROP TABLE IF EXISTS checkins;
 CREATE TABLE checkins (
     UserID TEXT,
     TweetID TEXT,
@@ -33,21 +18,10 @@ CREATE TABLE checkins (
     Time DATETIME,
     VenueID TEXT,
     Text TEXT
-);`
-
+)`
 	tableName := "checkins"
-	exists, err := tableExists(db, tableName)
 
-	if err != nil {
-		return fmt.Errorf("erro inesperado: %v", err)
-	}
-
-	if exists {
-		fmt.Printf("A tabela %s já existe\n", tableName)
-		return nil
-	}
-
-	_, err = db.Exec(sqlStmt)
+	_, err := db.Exec(sqlStmt)
 	if err != nil {
 		return fmt.Errorf("Erro ao criar a tabela '%s': %v", tableName, err)
 	}
